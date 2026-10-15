@@ -1,0 +1,357 @@
+// Complete Prisma Schema for Harmonics Platform
+// Phase 5: Profiles, Posts & Follows Extensions
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MODERATOR
+  USER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+enum PostType {
+  MUSIC
+  TEXT
+}
+
+model User {
+  id                 String       @id @default(cuid())
+  name               String?
+  username           String?      @unique
+  birthday           DateTime?
+  email              String       @unique
+  emailVerified      DateTime?
+  passwordHash       String?
+  image              String?
+  role               Role         @default(USER)
+  termsAccepted      Boolean      @default(false)
+  verificationToken  String?
+  resetToken         String?
+  resetTokenExpiry   DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  profile            Profile?
+  following          Follow[]     @relation("UserFollowers")
+  followers          Follow[]     @relation("UserFollowing")
+  posts              Post[]
+  audioTracks        AudioTrack[]
+  soundSnaps         SoundSnap[]
+  likes              Like[]
+  comments           Comment[]
+  reposts            Repost[]
+  savedItems         SavedItem[]
+  playlists          Playlist[]
+  conversations      ConversationParticipant[]
+  sentMessages       Message[]
+  notifications      Notification[]
+  reportsMade        Report[]
+  blocksInitiated    UserBlocks[] @relation("Blocker")
+  blocksReceived     UserBlocks[] @relation("Blocked")
+  modActions         ModerationAction[]
+  auditLogs          AdminAuditLog[]
+
+  @@index([email])
+  @@index([username])
+}
+
+model Profile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?
+  location    String?
+  website     String?
+  socialLinks Json?
+  bannerUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Post {
+  id          String      @id @default(cuid())
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  type        PostType    @default(TEXT)
+  content     String      // caption or text content
+  title       String?     // song title if music post
+  songArtist  String?     // song artist if music post
+  mediaUrl    String?     // audio or image media url
+  coverArtUrl String?     // cover image for music post
+  duration    String?     // track duration e.g. "03:45"
+  genre       String?     // genre if music post
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  likes       Like[]      @relation("PostLikes")
+  comments    Comment[]   @relation("PostComments")
+  reposts     Repost[]    @relation("PostReposts")
+  savedItems  SavedItem[] @relation("PostSaved")
+
+  @@index([authorId])
+  @@index([type])
+}
+
+model AudioTrack {
+  id           String          @id @default(cuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  fileUrl      String
+  duration     Int             @default(0) // seconds
+  plays        Int             @default(0)
+  genre        String?
+  coverArtUrl  String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  playlistTracks PlaylistTrack[]
+  likes        Like[]          @relation("TrackLikes")
+  comments     Comment[]       @relation("TrackComments")
+  reposts      Repost[]        @relation("TrackReposts")
+  savedItems   SavedItem[]     @relation("TrackSaved")
+
+  @@index([userId])
+  @@index([genre])
+}
+
+model SoundSnap {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  fileUrl   String
+  duration  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Like {
+  id         String      @id @default(cuid())
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId    String?
+  track      AudioTrack? @relation("TrackLikes", fields: [trackId], references: [id], onDelete: Cascade)
+  postId     String?
+  post       Post?       @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+
+  @@unique([userId, trackId])
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([trackId])
+  @@index([postId])
+}
+
+model Comment {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId   String?
+  track     AudioTrack? @relation("TrackComments", fields: [trackId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      Post?       @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([trackId])
+  @@index([postId])
+}
+
+model Repost {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId   String?
+  track     AudioTrack? @relation("TrackReposts", fields: [trackId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      Post?       @relation("PostReposts", fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, trackId])
+  @@unique([userId, postId])
+  @@index([userId])
+}
+
+model SavedItem {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId   String?
+  track     AudioTrack? @relation("TrackSaved", fields: [trackId], references: [id], onDelete: Cascade)
+  postId    String?
+  post      Post?       @relation("PostSaved", fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, trackId])
+  @@unique([userId, postId])
+  @@index([userId])
+}
+
+model Playlist {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  isPublic       Boolean         @default(true)
+  coverArtUrl    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  playlistTracks PlaylistTrack[]
+
+  @@index([userId])
+  @@index([isPublic])
+}
+
+model PlaylistTrack {
+  id         String     @id @default(cuid())
+  playlistId String
+  playlist   Playlist   @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  trackId    String
+  track      AudioTrack @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  position   Int        @default(0)
+  addedAt    DateTime   @default(now())
+
+  @@unique([playlistId, trackId])
+  @@index([playlistId])
+  @@index([trackId])
+}
+
+model Conversation {
+  id           String                    @id @default(cuid())
+  title        String?
+  isGroup      Boolean                   @default(false)
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt       DateTime     @default(now())
+  lastReadAt     DateTime?
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content        String
+  attachmentUrl  String?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actorId   String?
+  type      String   // e.g. LIKE, FOLLOW, COMMENT, MESSAGE
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  reporterId  String
+  reporter    User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+  targetType  String       // TRACK, POST, COMMENT, USER
+  targetId    String
+  reason      String
+  status      ReportStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([reporterId])
+  @@index([status])
+}
+
+model UserBlocks {
+  id        String   @id @default(cuid())
+  blockerId String
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
+
+model ModerationAction {
+  id           String   @id @default(cuid())
+  moderatorId  String
+  moderator    User     @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
+  targetUserId String
+  actionType   String   // BAN, WARN, SUSPEND, UNBAN
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  @@index([moderatorId])
+  @@index([targetUserId])
+}
+
+model AdminAuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  admin     User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action    String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+}

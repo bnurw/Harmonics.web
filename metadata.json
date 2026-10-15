@@ -1,0 +1,6 @@
+{
+  "name": "Harmonics",
+  "description": "A pristine audio and messaging platform built with Next.js, TypeScript, and Tailwind CSS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

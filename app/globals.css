@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #ffffff;
+    color: #171717;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+}
