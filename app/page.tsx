@@ -12,11 +12,12 @@ import { SoundSnapsRow } from '@/components/snaps/SoundSnapsRow';
 import { SearchView } from '@/components/search/SearchView';
 import { PlaylistsView } from '@/components/playlists/PlaylistsView';
 import { InboxView } from '@/components/messaging/InboxView';
+import { OwnerDashboardView } from '@/components/admin/OwnerDashboardView';
 import { MiniPlayer } from '@/components/audio/MiniPlayer';
 import { Plus } from 'lucide-react';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'home' | 'search' | 'playlists' | 'reels' | 'inbox' | 'profile'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'search' | 'playlists' | 'reels' | 'inbox' | 'profile' | 'admin'>('home');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
@@ -53,9 +54,9 @@ export default function Home() {
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-neutral-200">
                   <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-neutral-800 text-xs font-medium mb-3">
-                      <span>Phase 8 Social, Playlists & Messaging</span>
+                      <span>Phase 9 Final Delivery & Owner Dashboard</span>
                       <span aria-hidden="true">·</span>
-                      <span>Full-Stack Platform Integration</span>
+                      <span>Full Platform Complete</span>
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight text-neutral-950">
                       Harmonics Home Feed
@@ -92,6 +93,10 @@ export default function Home() {
               <InboxView currentUser={currentUser} />
             )}
 
+            {activeTab === 'admin' && (
+              <OwnerDashboardView currentUser={currentUser} />
+            )}
+
             {activeTab === 'profile' && (
               currentUser ? (
                 <ProfileView 
@@ -113,7 +118,7 @@ export default function Home() {
       <MiniPlayer activeTab={activeTab} />
 
       <BottomNav 
-        activeTab={activeTab === 'search' || activeTab === 'playlists' ? 'home' : activeTab as any} 
+        activeTab={activeTab === 'search' || activeTab === 'playlists' || activeTab === 'admin' ? 'home' : activeTab as any} 
         onTabChange={(tab) => {
           setSelectedProfileUserId(null);
           setActiveTab(tab);

@@ -63,10 +63,10 @@ export function Navbar({ onNavigate }: NavbarProps) {
             <button onClick={() => onNavigate?.('reels')} className="hover:text-neutral-950 transition-colors whitespace-nowrap shrink-0">
               Music Reels
             </button>
-            {user?.role && (user.role === 'OWNER' || user.role === 'ADMIN') && (
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-900 bg-neutral-100 px-2 py-1 rounded-md">
-                <Shield className="w-3 h-3" /> {user.role}
-              </span>
+            {user?.role && (user.role === 'OWNER' || user.role === 'ADMIN' || user.role === 'MODERATOR') && (
+              <button onClick={() => onNavigate?.('admin')} className="hover:text-neutral-950 transition-colors whitespace-nowrap shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-neutral-900 bg-neutral-100 px-2.5 py-1 rounded-lg">
+                <Shield className="w-3.5 h-3.5" /> Dashboard
+              </button>
             )}
           </nav>
 

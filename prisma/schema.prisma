@@ -1,5 +1,5 @@
 // Complete Prisma Schema for Harmonics Platform
-// Phase 7: Music Reels, Lyrics & SoundSnaps Extensions
+// Phase 9: Owner Dashboard & Moderation Extensions
 
 datasource db {
   provider = "postgresql"
@@ -15,6 +15,12 @@ enum Role {
   ADMIN
   MODERATOR
   USER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
 }
 
 enum ReportStatus {
@@ -39,6 +45,7 @@ model User {
   passwordHash       String?
   image              String?
   role               Role         @default(USER)
+  status             UserStatus   @default(ACTIVE)
   termsAccepted      Boolean      @default(false)
   verificationToken  String?
   resetToken         String?
@@ -68,6 +75,7 @@ model User {
 
   @@index([email])
   @@index([username])
+  @@index([status])
 }
 
 model Profile {
@@ -109,6 +117,7 @@ model Post {
   duration    String?     // track duration e.g. "03:45"
   genre       String?     // genre if music post
   lyrics      String?     // synchronized or plain lyrics
+  isRemoved   Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -119,6 +128,7 @@ model Post {
 
   @@index([authorId])
   @@index([type])
+  @@index([isRemoved])
 }
 
 model AudioTrack {
@@ -133,6 +143,7 @@ model AudioTrack {
   genre        String?
   coverArtUrl  String?
   lyrics       String?
+  isRemoved    Boolean         @default(false)
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
@@ -144,6 +155,7 @@ model AudioTrack {
 
   @@index([userId])
   @@index([genre])
+  @@index([isRemoved])
 }
 
 model SoundSnap {
@@ -154,10 +166,12 @@ model SoundSnap {
   fileUrl   String
   duration  Int      @default(0) // 15-30 seconds
   expiresAt DateTime // 24 hours expiry
+  isRemoved Boolean  @default(false)
   createdAt DateTime @default(now())
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([isRemoved])
 }
 
 model Like {
@@ -186,12 +200,14 @@ model Comment {
   postId    String?
   post      Post?       @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
   content   String
+  isRemoved Boolean     @default(false)
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
   @@index([userId])
   @@index([trackId])
   @@index([postId])
+  @@index([isRemoved])
 }
 
 model Repost {
@@ -232,6 +248,7 @@ model Playlist {
   description    String?
   isPublic       Boolean         @default(true)
   coverArtUrl    String?
+  isRemoved      Boolean         @default(false)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -239,6 +256,7 @@ model Playlist {
 
   @@index([userId])
   @@index([isPublic])
+  @@index([isRemoved])
 }
 
 model PlaylistTrack {
@@ -311,7 +329,7 @@ model Report {
   id          String       @id @default(cuid())
   reporterId  String
   reporter    User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
-  targetType  String       // TRACK, POST, COMMENT, USER
+  targetType  String       // TRACK, POST, COMMENT, USER, PLAYLIST, SNAP
   targetId    String
   reason      String
   status      ReportStatus @default(PENDING)
@@ -340,7 +358,7 @@ model ModerationAction {
   moderatorId  String
   moderator    User     @relation(fields: [moderatorId], references: [id], onDelete: Cascade)
   targetUserId String
-  actionType   String   // BAN, WARN, SUSPEND, UNBAN
+  actionType   String   // BAN, WARN, SUSPEND, UNBAN, REMOVE_CONTENT
   notes        String?
   createdAt    DateTime @default(now())
 
