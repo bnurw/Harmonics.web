@@ -3,18 +3,35 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AuthModal } from '@/components/auth/AuthModal';
-import { User, LogOut, Shield } from 'lucide-react';
+import { NotificationsModal } from '@/components/notifications/NotificationsModal';
+import { User, LogOut, Shield, Bell, Search, ListMusic } from 'lucide-react';
 
-export function Navbar() {
+interface NavbarProps {
+  onNavigate?: (tab: string) => void;
+}
+
+export function Navbar({ onNavigate }: NavbarProps) {
   const [user, setUser] = useState<any>(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     fetch('/api/auth/me')
       .then((res) => res.json())
       .then((data) => {
         if (data.user) setUser(data.user);
+      })
+      .catch(() => {});
+
+    fetch('/api/notifications')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.notifications) {
+          const unread = data.notifications.filter((n: any) => !n.read).length;
+          setUnreadCount(unread);
+        }
       })
       .catch(() => {});
   }, []);
@@ -29,22 +46,23 @@ export function Navbar() {
     <>
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-200">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-8 px-6 h-16">
-          {/* Zone 1: Single text element wordmark */}
           <Link href="/" className="text-lg font-bold tracking-tight text-neutral-950 whitespace-nowrap shrink-0">
             Harmonics
           </Link>
 
-          {/* Zone 2: 4-5 clean single-line text navigation links */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-neutral-600">
-            <Link href="#architecture" className="hover:text-neutral-950 transition-colors whitespace-nowrap shrink-0">
-              Architecture
-            </Link>
-            <Link href="#features" className="hover:text-neutral-950 transition-colors whitespace-nowrap shrink-0">
-              Features
-            </Link>
-            <Link href="#roadmap" className="hover:text-neutral-950 transition-colors whitespace-nowrap shrink-0">
-              Roadmap
-            </Link>
+            <button onClick={() => onNavigate?.('home')} className="hover:text-neutral-950 transition-colors whitespace-nowrap shrink-0">
+              Feed
+            </button>
+            <button onClick={() => onNavigate?.('search')} className="hover:text-neutral-950 transition-colors whitespace-nowrap shrink-0 inline-flex items-center gap-1.5">
+              <Search className="w-4 h-4" /> Search
+            </button>
+            <button onClick={() => onNavigate?.('playlists')} className="hover:text-neutral-950 transition-colors whitespace-nowrap shrink-0 inline-flex items-center gap-1.5">
+              <ListMusic className="w-4 h-4" /> Playlists
+            </button>
+            <button onClick={() => onNavigate?.('reels')} className="hover:text-neutral-950 transition-colors whitespace-nowrap shrink-0">
+              Music Reels
+            </button>
             {user?.role && (user.role === 'OWNER' || user.role === 'ADMIN') && (
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-900 bg-neutral-100 px-2 py-1 rounded-md">
                 <Shield className="w-3 h-3" /> {user.role}
@@ -52,8 +70,20 @@ export function Navbar() {
             )}
           </nav>
 
-          {/* Zone 3: 1 primary action / User Auth */}
           <div className="flex items-center gap-3 shrink-0">
+            {user && (
+              <button 
+                onClick={() => setIsNotifOpen(true)}
+                className="relative p-2.5 rounded-xl text-neutral-700 hover:bg-neutral-100 transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-neutral-950" />
+                )}
+              </button>
+            )}
+
             {user ? (
               <div className="flex items-center gap-3">
                 <span className="text-xs font-medium text-neutral-800 hidden sm:inline">
@@ -94,6 +124,11 @@ export function Navbar() {
           setUser(newUser);
           window.location.reload();
         }}
+      />
+
+      <NotificationsModal 
+        isOpen={isNotifOpen}
+        onClose={() => setIsNotifOpen(false)}
       />
     </>
   );

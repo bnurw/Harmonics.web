@@ -1,5 +1,5 @@
 // Complete Prisma Schema for Harmonics Platform
-// Phase 5: Profiles, Posts & Follows Extensions
+// Phase 7: Music Reels, Lyrics & SoundSnaps Extensions
 
 datasource db {
   provider = "postgresql"
@@ -108,6 +108,7 @@ model Post {
   coverArtUrl String?     // cover image for music post
   duration    String?     // track duration e.g. "03:45"
   genre       String?     // genre if music post
+  lyrics      String?     // synchronized or plain lyrics
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -131,6 +132,7 @@ model AudioTrack {
   plays        Int             @default(0)
   genre        String?
   coverArtUrl  String?
+  lyrics       String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
@@ -150,10 +152,12 @@ model SoundSnap {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   fileUrl   String
-  duration  Int      @default(0)
+  duration  Int      @default(0) // 15-30 seconds
+  expiresAt DateTime // 24 hours expiry
   createdAt DateTime @default(now())
 
   @@index([userId])
+  @@index([expiresAt])
 }
 
 model Like {

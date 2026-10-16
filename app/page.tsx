@@ -7,11 +7,16 @@ import { Footer } from '@/components/layout/Footer';
 import { CreateModal } from '@/components/modals/CreateModal';
 import { HomeFeed } from '@/components/feed/HomeFeed';
 import { ProfileView } from '@/components/profile/ProfileView';
+import { MusicReelsView } from '@/components/reels/MusicReelsView';
+import { SoundSnapsRow } from '@/components/snaps/SoundSnapsRow';
+import { SearchView } from '@/components/search/SearchView';
+import { PlaylistsView } from '@/components/playlists/PlaylistsView';
+import { InboxView } from '@/components/messaging/InboxView';
 import { MiniPlayer } from '@/components/audio/MiniPlayer';
-import { PlaySquare, MessageSquare, Radio, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'home' | 'reels' | 'inbox' | 'profile'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'search' | 'playlists' | 'reels' | 'inbox' | 'profile'>('home');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
@@ -27,7 +32,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white text-neutral-900 pb-24 md:pb-0">
-      <Navbar />
+      <Navbar onNavigate={(tab) => {
+        setSelectedProfileUserId(null);
+        setActiveTab(tab as any);
+      }} />
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
         {selectedProfileUserId ? (
@@ -39,13 +47,15 @@ export default function Home() {
         ) : (
           <>
             {activeTab === 'home' && (
-              <div className="space-y-8">
+              <div className="space-y-6">
+                <SoundSnapsRow currentUser={currentUser} />
+
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-neutral-200">
                   <div>
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-neutral-800 text-xs font-medium mb-3">
-                      <span>Phase 6 Audio Uploads & Player</span>
+                      <span>Phase 8 Social, Playlists & Messaging</span>
                       <span aria-hidden="true">·</span>
-                      <span>Real Audio Storage & Playback</span>
+                      <span>Full-Stack Platform Integration</span>
                     </div>
                     <h1 className="text-3xl font-bold tracking-tight text-neutral-950">
                       Harmonics Home Feed
@@ -66,40 +76,20 @@ export default function Home() {
               </div>
             )}
 
+            {activeTab === 'search' && (
+              <SearchView onSelectProfile={(userId) => setSelectedProfileUserId(userId)} />
+            )}
+
+            {activeTab === 'playlists' && (
+              <PlaylistsView currentUser={currentUser} />
+            )}
+
             {activeTab === 'reels' && (
-              <div className="max-w-xl mx-auto space-y-6">
-                <div className="p-6 rounded-2xl border border-neutral-200 bg-neutral-50 text-center">
-                  <PlaySquare className="w-10 h-10 mx-auto text-neutral-900 mb-3" />
-                  <h3 className="font-bold text-lg text-neutral-950">Music Reels & Teasers</h3>
-                  <p className="text-xs text-neutral-500 mt-1">Playback is stopped and mini-player hidden in Reels mode.</p>
-                </div>
-                <div className="aspect-[9/16] max-h-[500px] rounded-3xl bg-neutral-950 text-white flex flex-col justify-between p-8 relative overflow-hidden shadow-xl">
-                  <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
-                  <div className="relative flex items-center justify-between">
-                    <span className="text-xs font-medium bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">#AmbientReel</span>
-                    <Radio className="w-5 h-5 animate-pulse text-emerald-400" />
-                  </div>
-                  <div className="relative space-y-2">
-                    <h4 className="font-bold text-xl">Floating Through Ether</h4>
-                    <p className="text-xs text-neutral-300">Aura Collective · 12.4k views</p>
-                  </div>
-                </div>
-              </div>
+              <MusicReelsView />
             )}
 
             {activeTab === 'inbox' && (
-              <div className="max-w-2xl mx-auto space-y-4">
-                <div className="p-4 rounded-xl border border-neutral-200 bg-neutral-50 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-neutral-900 text-white flex items-center justify-center font-bold">AC</div>
-                    <div>
-                      <h4 className="font-semibold text-sm text-neutral-950">Aura Collective</h4>
-                      <p className="text-xs text-neutral-500">Loved your comment on Midnight Resonance!</p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] text-neutral-400">2m ago</span>
-                </div>
-              </div>
+              <InboxView currentUser={currentUser} />
             )}
 
             {activeTab === 'profile' && (
@@ -113,15 +103,6 @@ export default function Home() {
                 <div className="text-center py-20">
                   <h3 className="font-bold text-lg text-neutral-950 mb-2">Sign in required</h3>
                   <p className="text-xs text-neutral-500 mb-6">Please sign in to view and edit your profile.</p>
-                  <button 
-                    onClick={() => {
-                      const btn = document.querySelector('header button') as HTMLButtonElement;
-                      btn?.click();
-                    }}
-                    className="px-6 py-2.5 bg-neutral-950 text-white rounded-xl text-xs font-medium"
-                  >
-                    Sign In / Register
-                  </button>
                 </div>
               )
             )}
@@ -129,11 +110,10 @@ export default function Home() {
         )}
       </main>
 
-      {/* Persistent Mini Player (hidden on reels) */}
       <MiniPlayer activeTab={activeTab} />
 
       <BottomNav 
-        activeTab={activeTab} 
+        activeTab={activeTab === 'search' || activeTab === 'playlists' ? 'home' : activeTab as any} 
         onTabChange={(tab) => {
           setSelectedProfileUserId(null);
           setActiveTab(tab);
